@@ -55,16 +55,36 @@ class ViewProductController extends Controller
     //* Lấy danh sách các sản phẩm được xem nhiều nhất.
     public function topViewedProducts()
     {
-        $products = ViewProduct::select('product_id', DB::raw('SUM(view_count) as total_views'))
+        // Lấy top product_id theo tổng view
+        $topViews = ViewProduct::select('product_id', DB::raw('SUM(view_count) as total_views'))
             ->groupBy('product_id')
             ->orderByDesc('total_views')
-            ->with([
-                'product.brand',
-                'product.category',
-                'product.product_images'
-            ])
+            ->limit(20)
             ->get();
 
-        return response()->json($products);
+        if ($topViews->isEmpty()) {
+            return response()->json([]);
+        }
+
+        // Load products với relations (khớp với ProductResource)
+        $productIds = $topViews->pluck('product_id');
+        $products = Product::with(['brand', 'category', 'variants', 'images', 'thumbnailImage'])
+            ->whereIn('id', $productIds)
+            ->where('status', 'active')
+            ->get()
+            ->keyBy('id');
+
+        // Merge view counts vào products, dùng ProductResource để format đúng
+        $result = $topViews->map(function ($view) use ($products) {
+            $product = $products->get($view->product_id);
+            if (!$product) return null;
+            return [
+                'product_id'  => $view->product_id,
+                'total_views' => (int) $view->total_views,
+                'product'     => new \App\Http\Resources\ProductResource($product),
+            ];
+        })->filter()->values();
+
+        return response()->json($result);
     }
 }

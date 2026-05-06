@@ -16,8 +16,8 @@ class BrandsController extends Controller
      */
     public function index()
     {
-        // return Brand::all();
-        return BrandResource::collection(Brand::latest()->paginate(10));
+        $brands = Brand::withCount('products')->latest()->paginate(10);
+        return BrandResource::collection($brands);
     }
 
     public function store(StoreBrandRequest $request)

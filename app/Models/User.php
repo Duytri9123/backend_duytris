@@ -23,6 +23,9 @@ class User extends Authenticatable
         'email',
         'password',
         'isAdmin',
+        'is_banned',
+        'banned_reason',
+        'banned_at',
     ];
 
     /**
@@ -44,8 +47,10 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'isAdmin' => 'boolean',
+            'password'          => 'hashed',
+            'isAdmin'           => 'boolean',
+            'is_banned'         => 'boolean',
+            'banned_at'         => 'datetime',
         ];
     }
     public function views()
@@ -59,5 +64,24 @@ class User extends Authenticatable
     public function addresses()
     {
         return $this->hasMany(Address::class);
+    }
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function complaints()
+    {
+        return $this->hasMany(\App\Models\UserComplaint::class, 'reported_user_id');
+    }
+
+    public function supportTickets()
+    {
+        return $this->hasMany(SupportTicket::class);
+    }
+
+    public function supportTicketReplies()
+    {
+        return $this->hasMany(SupportTicketReply::class);
     }
 }
